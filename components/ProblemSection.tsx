@@ -1,126 +1,108 @@
 import React from 'react';
-import { Frown, BatteryLow, AlertCircle, Zap, MessageCircle } from 'lucide-react';
+import { Scissors, Clock, Award, MapPin, ThumbsUp, DollarSign } from 'lucide-react';
 
 export const ProblemSection: React.FC = () => {
-  const problems = [
+  const benefits = [
     {
-      icon: Frown,
-      gradient: "from-gold-400/10 via-gold-500/10 to-amber-500/10",
-      iconGradient: "from-gold-400 to-gold-600",
-      glowColor: "shadow-gold-400/20",
-      title: "Feszültség és izommerevség",
-      desc: "Egész nap ülsz az irodában vagy fizikailag megterhelő munkát végzel? Az izmaid megfeszülnek, a nyakad, hátad fáj, és nehezen tudsz ellazulni.",
-      impact: "A rendszeres feszültség hosszú távon komolyabb problémákhoz vezethet."
+      icon: Award,
+      title: "Tapasztalt Fodrászok",
+      description: "15+ év tapasztalat a férfi hajvágás és szakáll ápolás terén. Minden munkatársunk képzett szakember."
     },
     {
-      icon: BatteryLow,
-      gradient: "from-amber-500/10 via-orange-500/10 to-red-500/10",
-      iconGradient: "from-amber-500 to-orange-600",
-      glowColor: "shadow-orange-500/20",
-      title: "Krónikus fáradtság és kimerültség",
-      desc: "Hiába alszol eleget, mégis fáradtan ébredsz? A tested jelez, hogy szüksége van regenerálódásra – de a mindennapok forgatagában erre ritkán jut idő.",
-      impact: "A kimerültség csökkenti a teljesítőképességed és az életminőséged."
+      icon: Scissors,
+      title: "Modern & Klasszikus",
+      description: "A hagyományos borbély technikákat ötvözzük a modern trendekkel, hogy mindig stílusos legyél."
     },
     {
-      icon: AlertCircle,
-      gradient: "from-rose-500/10 via-pink-500/10 to-purple-500/10",
-      iconGradient: "from-rose-500 to-pink-600",
-      glowColor: "shadow-rose-500/20",
-      title: "Stressz és alvási problémák",
-      desc: "A stressz nemcsak a fejedben van – a testedben is megjelenik. Rossz alvás, fejfájás, hangulatváltozások jelzik, hogy ideje tenni valamit.",
-      impact: "A stressz kezeletlen marad, ha csak a tüneteket kezeled."
+      icon: Clock,
+      title: "Rugalmas Időpontok",
+      description: "Online időpontfoglalás és rugalmas nyitvatartás, hogy mindig találj szabad időpontot."
     },
     {
-      icon: Zap,
-      gradient: "from-violet-500/10 via-purple-500/10 to-fuchsia-500/10",
-      iconGradient: "from-violet-500 to-purple-600",
-      glowColor: "shadow-purple-500/20",
-      title: "Sport utáni regeneráció",
-      desc: "Edzés után fájnak az izmaid, lassan regenerálódsz? A masszázs felgyorsítja a felépülést és csökkenti az izomlázat.",
-      impact: "Masszázs nélkül tovább tart a regeneráció és nagyobb a sérülés kockázata."
+      icon: ThumbsUp,
+      title: "Kiváló Minőség",
+      description: "5 csillagos Google értékelések és elégedett vendégek bizonyítják szakértelmünket."
+    },
+    {
+      icon: MapPin,
+      title: "Könnyen Elérhető",
+      description: "Nyíregyháza központjában, ingyenes parkolási lehetőséggel az üzlet közelében."
+    },
+    {
+      icon: DollarSign,
+      title: "Tisztességes Árak",
+      description: "Kiváló ár-érték arány, átlátható árazás, nincs rejtett költség."
     }
   ];
 
-  const scrollToChatbot = () => {
-    const chatInput = document.getElementById('chatbot-input');
-    if (chatInput) {
-      chatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => chatInput.focus(), 500);
-    }
-  };
-
   return (
-    <section className="py-24 bg-gradient-to-b from-gray-900 via-gray-950 to-black relative z-10 -mt-8 rounded-t-[3rem] shadow-[0_-20px_50px_rgba(0,0,0,0.3)] overflow-hidden">
-      {/* Decorative background effects */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-gold-400/10 rounded-full blur-3xl opacity-40"></div>
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl opacity-40"></div>
+    <section className="relative py-20 lg:py-32 bg-gradient-to-b from-black via-barbershop-navy to-black overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#C41E3A_1px,transparent_1px)] [background-size:30px_30px]"></div>
 
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20">
-          <h2 className="text-4xl md:text-5xl font-extrabold font-heading text-white mb-6 leading-tight">
-            Ismerős{' '}
-            <span className="bg-gradient-to-r from-gold-400 to-gold-500 bg-clip-text text-transparent">
-              helyzetek
+      {/* Ambient Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-barbershop-red/5 rounded-full blur-[120px]"></div>
+
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        {/* Section Header */}
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 bg-barbershop-red/10 text-barbershop-red px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-barbershop-red/20">
+            <Award size={16} />
+            Miért válassz minket?
+          </div>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold font-heading text-white leading-tight">
+            A Legjobb Választás <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-barbershop-red to-barbershop-burgundy">
+              Nyíregyházán
             </span>
-            ?
           </h2>
-          <p className="text-lg text-gray-400 leading-relaxed">
-            Nem vagy egyedül ezekkel. Sok ember küzd hasonló problémákkal –
-            és <span className="font-bold text-gold-400">van megoldás</span>.
+          <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            Több mint egy évtizedes tapasztalattal várjuk vendégeinket. Nálunk nem csak hajat vágunk,
+            hanem élményt nyújtunk.
           </p>
-          <div className="w-24 h-1.5 bg-gradient-to-r from-gold-400 to-gold-600 mx-auto mt-6 rounded-full"></div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 lg:gap-8 max-w-6xl mx-auto">
-          {problems.map((prob, idx) => (
-            <div
-              key={idx}
-              className={`group relative bg-gradient-to-br ${prob.gradient} backdrop-blur-sm rounded-3xl p-8 border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2`}
-            >
-              {/* Glow effect on hover */}
-              <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${prob.iconGradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 blur-xl`}></div>
-
-              <div className="relative z-10">
-                {/* Icon with gradient */}
-                <div className={`mb-6 w-14 h-14 rounded-2xl bg-gradient-to-br ${prob.iconGradient} text-white flex items-center justify-center shadow-lg ${prob.glowColor} group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
-                  <prob.icon size={28} strokeWidth={2} />
+        {/* Benefits Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {benefits.map((benefit, index) => {
+            const Icon = benefit.icon;
+            return (
+              <div
+                key={index}
+                className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-barbershop-red/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-barbershop-red/10"
+              >
+                {/* Icon */}
+                <div className="w-14 h-14 bg-gradient-to-br from-barbershop-red to-barbershop-burgundy rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-barbershop-red/20">
+                  <Icon size={28} className="text-white" />
                 </div>
 
-                {/* Title */}
-                <h3 className="text-2xl font-bold font-heading text-white mb-4 leading-tight">
-                  {prob.title}
+                {/* Content */}
+                <h3 className="text-xl font-bold text-white mb-3 font-heading">
+                  {benefit.title}
                 </h3>
-
-                {/* Description */}
-                <p className="text-gray-300 leading-relaxed mb-4">
-                  {prob.desc}
+                <p className="text-gray-400 leading-relaxed">
+                  {benefit.description}
                 </p>
 
-                {/* Impact - highlighted */}
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-sm font-semibold text-gray-400 italic flex items-start gap-2">
-                    <span className="text-gold-400 mt-0.5">→</span>
-                    <span>{prob.impact}</span>
-                  </p>
-                </div>
+                {/* Hover Glow */}
+                <div className="absolute inset-0 bg-gradient-to-br from-barbershop-red/0 to-barbershop-red/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* CTA Button to Chatbot */}
-        <div className="mt-16 text-center">
-          <button
-            onClick={scrollToChatbot}
-            className="group inline-flex items-center gap-3 bg-gradient-to-r from-gold-400 to-gold-500 text-black px-10 py-5 rounded-2xl font-bold text-lg shadow-2xl shadow-gold-400/30 hover:shadow-gold-400/50 hover:scale-[1.05] transition-all duration-300"
-          >
-            <MessageCircle size={24} className="group-hover:rotate-12 transition-transform" />
-            Találd meg a megoldást
-            <span className="text-2xl">→</span>
-          </button>
-          <p className="text-sm text-gray-500 mt-4">
-            Segítünk kiválasztani a neked megfelelő masszázst
+        {/* Bottom CTA */}
+        <div className="text-center mt-16">
+          <p className="text-gray-400 text-lg mb-6">
+            Készen állsz a változásra?
           </p>
+          <a
+            href="#booking"
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-barbershop-red to-barbershop-burgundy text-white px-8 py-4 rounded-full font-bold text-lg hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-barbershop-red/30 hover:shadow-barbershop-red/50"
+          >
+            Foglalj időpontot
+            <Scissors size={20} />
+          </a>
         </div>
       </div>
     </section>

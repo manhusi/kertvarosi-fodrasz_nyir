@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Phone, CalendarCheck } from 'lucide-react';
-import { LANDING_DATA } from '../constants';
+import { MapPin } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -14,35 +13,27 @@ export const Navbar: React.FC = () => {
   }, []);
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/95 backdrop-blur-md shadow-lg shadow-black/20 py-3' : 'bg-transparent py-6'}`}>
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-barbershop-navy/95 backdrop-blur-md shadow-lg shadow-black/20 py-3' : 'bg-transparent py-6'}`}>
       <div className="container mx-auto px-4 lg:px-8 flex justify-between items-center">
         {/* Logo Section */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-gold-400 to-gold-600 rounded-full flex items-center justify-center">
-            <span className="text-black font-bold text-lg">B</span>
+          <div className="w-10 h-10 bg-gradient-to-br from-barbershop-red to-barbershop-burgundy rounded-full flex items-center justify-center">
+            <span className="text-white font-bold text-lg">K</span>
           </div>
           <div className="flex flex-col">
-            <span className={`text-xl font-extrabold font-heading leading-none ${scrolled ? 'text-white' : 'text-white'}`}>
-              Bence
+            <span className="text-xl font-extrabold font-heading leading-none text-white">
+              Kertvárosi
             </span>
-            <span className="text-sm font-bold text-gold-400 tracking-widest uppercase">
-              Masszázs
+            <span className="text-sm font-bold text-barbershop-red tracking-widest uppercase">
+              Fodrászat
             </span>
           </div>
         </div>
 
-        {/* Contact CTA - No Navigation Links */}
-        <div className="flex items-center gap-4">
-          <a
-            href="/foglalas"
-            className={`group flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm transition-all duration-300 shadow-lg ${scrolled
-              ? 'bg-gold-400 text-black hover:bg-gold-500 shadow-gold-400/30'
-              : 'bg-gold-400/90 text-black hover:bg-gold-400 shadow-gold-400/20'
-              }`}
-          >
-            <CalendarCheck size={18} className="transition-transform group-hover:scale-110" />
-            <span>Időpontfoglalás</span>
-          </a>
+        {/* Address */}
+        <div className="hidden sm:flex items-center gap-2 text-gray-400 text-sm">
+          <MapPin size={16} className="text-barbershop-red" />
+          <span>Újház sor 15., Nyíregyháza</span>
         </div>
       </div>
     </nav>

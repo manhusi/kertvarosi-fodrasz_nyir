@@ -1,107 +1,88 @@
 import React from 'react';
-import { LANDING_DATA } from '../constants';
-import { ArrowRight } from 'lucide-react';
-
-const STATIC_IMAGES: Record<string, string> = {
-  "Svéd Masszázs": "/images/sved-masszazs.jpg",
-  "Relax Masszázs": "/images/relax-masszazs-1.jpg",
-  "Aromaterápiás Masszázs": "/images/relax-masszazs-2.jpg",
-  "Talpmasszázs": "/images/talp-masszazs.jpg",
-  "Speciális Kezelések": "/images/sport-masszazs.jpg"
-};
+import { Scissors, Clock, DollarSign } from 'lucide-react';
+import { FULL_SERVICES_DATA } from '../constants';
 
 export const SolutionSection: React.FC = () => {
-  const marqueeItems = [...LANDING_DATA.service_categories, ...LANDING_DATA.service_categories];
-
-  const askAboutService = (serviceName: string) => {
-    const chatInput = document.getElementById('chatbot-input') as HTMLInputElement;
-    if (chatInput) {
-      chatInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => {
-        // Set the value
-        const message = `Mire jó a ${serviceName}?`;
-
-        // Trigger React's onChange by dispatching native input event
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-        nativeInputValueSetter?.call(chatInput, message);
-
-        const inputEvent = new Event('input', { bubbles: true });
-        chatInput.dispatchEvent(inputEvent);
-
-        // Trigger Enter keypress to send
-        setTimeout(() => {
-          const enterEvent = new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true
-          });
-          chatInput.dispatchEvent(enterEvent);
-        }, 100);
-      }, 600);
-    }
-  };
+  const services = FULL_SERVICES_DATA.kertvarosifodraszat_barbershop_services;
 
   return (
-    <section id="solutions" className="py-24 bg-black text-white relative overflow-hidden">
-      {/* Background patterns */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-5 bg-[radial-gradient(#d4af37_1px,transparent_1px)] [background-size:40px_40px]"></div>
-      <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-gold-400/5 to-transparent"></div>
+    <section className="relative py-20 lg:py-32 bg-gradient-to-b from-black via-gray-900 to-barbershop-navy overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#C41E3A_1px,transparent_1px)] [background-size:40px_40px]"></div>
 
-      <div className="container mx-auto px-4 relative z-10 mb-16">
-        <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
-          <span className="text-gold-400 font-bold uppercase tracking-widest text-sm mb-3 block">Szolgáltatásaink</span>
-          <h2 className="text-3xl md:text-5xl font-bold font-heading text-white mb-6">
-            Professzionális Masszázs Kezelések
+      {/* Ambient Glow */}
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-barbershop-red/5 rounded-full blur-[150px]"></div>
+
+      <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        {/* Section Header */}
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 bg-barbershop-red/10 text-barbershop-red px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-barbershop-red/20">
+            <Scissors size={16} />
+            Szolgáltatásaink
+          </div>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold font-heading text-white leading-tight">
+            Professzionális <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-barbershop-red to-barbershop-burgundy">
+              Fodrász Szolgáltatások
+            </span>
           </h2>
-          <p className="text-gray-400 text-lg leading-relaxed">
-            Válaszd ki a számodra ideális kezelést. Svéd, relax, aromaterápiás és speciális technikák a tested felfrissítéséért.
+          <p className="text-lg md:text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            Hajvágástól a szakáll ápolásig – minden, amire szükséged van a tökéletes megjelenéshez.
           </p>
         </div>
-      </div>
 
-      <div className="relative w-full overflow-hidden pb-12">
-        <div className="flex w-max animate-marquee hover:[animation-play-state:paused] items-stretch gap-6 px-4">
-          {marqueeItems.map((service, idx) => (
+        {/* Services Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 max-w-7xl mx-auto">
+          {services.map((service, index) => (
             <div
-              key={`${service.category_name}-${idx}`}
-              onClick={() => askAboutService(service.category_name)}
-              className="w-[300px] md:w-[380px] flex flex-col bg-white/5 backdrop-blur-md rounded-2xl border border-gold-400/20 transition-all duration-300 group overflow-hidden hover:bg-white/10 hover:shadow-2xl hover:shadow-gold-400/10 hover:-translate-y-2 cursor-pointer"
+              key={index}
+              className="group relative bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm rounded-2xl p-8 border border-white/10 hover:border-barbershop-red/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-barbershop-red/10"
             >
-              <div className="h-48 w-full relative overflow-hidden shrink-0">
-                <img
-                  src={STATIC_IMAGES[service.category_name] || "/images/sved-masszazs.jpg"}
-                  alt={service.category_name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-80 group-hover:opacity-100"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80"></div>
+              {/* Service Icon */}
+              <div className="w-12 h-12 bg-gradient-to-br from-barbershop-red to-barbershop-burgundy rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-barbershop-red/20">
+                <Scissors size={24} className="text-white" />
               </div>
 
-              <div className="p-6 flex flex-col flex-grow relative">
-                <h3 className="text-xl font-bold font-heading mb-3 text-white group-hover:text-gold-400 transition-colors">
-                  {service.category_name}
-                </h3>
-                <p className="text-gray-400 text-sm leading-relaxed mb-4 flex-grow">
-                  {service.description}
-                </p>
-                <div className="mt-auto flex items-center text-gold-400 text-sm font-bold gap-1 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
-                  Tudj meg többet <ArrowRight size={14} />
+              {/* Service Name */}
+              <h3 className="text-2xl font-bold text-white mb-3 font-heading">
+                {service.service_name}
+              </h3>
+
+              {/* Service Description */}
+              <p className="text-gray-400 leading-relaxed mb-6 text-sm">
+                {service.detailed_description}
+              </p>
+
+              {/* Service Details */}
+              <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 text-gray-400">
+                  <Clock size={16} className="text-barbershop-red" />
+                  <span className="text-sm font-medium">{service.duration}</span>
+                </div>
+                <div className="flex items-center gap-1 text-barbershop-red font-bold text-xl">
+                  <span>{service.pricing}</span>
                 </div>
               </div>
+
+              {/* Hover Glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-barbershop-red/0 to-barbershop-red/5 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
             </div>
           ))}
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 relative z-10 flex justify-center pb-4">
-        <button
-          onClick={() => document.getElementById('chatbot-input')?.focus()}
-          className="text-gold-400 border border-gold-400/50 px-8 py-4 rounded-full hover:bg-gold-400 hover:text-black transition-all font-bold flex items-center gap-3 group bg-gold-400/5 backdrop-blur-sm"
-        >
-          Melyik masszázs való nekem? <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+        {/* Bottom CTA */}
+        <div className="text-center mt-16 space-y-6">
+          <p className="text-gray-400 text-lg">
+            Találd meg a számodra tökéletes szolgáltatást!
+          </p>
+          <a
+            href="#booking"
+            className="inline-flex items-center gap-3 bg-gradient-to-r from-barbershop-red to-barbershop-burgundy text-white px-8 py-4 rounded-full font-bold text-lg hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-barbershop-red/30 hover:shadow-barbershop-red/50"
+          >
+            Foglalj időpontot most
+            <Scissors size={20} />
+          </a>
+        </div>
       </div>
     </section>
   );
