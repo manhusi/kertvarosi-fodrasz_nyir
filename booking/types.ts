@@ -19,6 +19,7 @@ export interface Slot {
 
 export interface AvailabilityResponse {
   account_name: string;
+  account_type?: string; // New field for account type (e.g., 'fodraszat')
   slots: Slot[];
   service_id: string[];  // Deprecated: kept for backward compatibility
   services: Service[];   // New detailed structure
@@ -44,7 +45,25 @@ export interface BookingFormData {
   notes: string;
 }
 
-export type BookingStep = 'service' | 'date' | 'time' | 'form' | 'success';
+export type BookingStep = 'customer-type' | 'returning-identify' | 'service' | 'date' | 'time' | 'form' | 'success';
+
+export interface ReturningCustomer {
+  name: string;
+  usual_duration_minutes: number;
+  email?: string;
+  phone?: string;
+}
+
+export interface IdentifyCustomerRequest {
+  email?: string;
+  phone?: string;
+}
+
+export interface IdentifyCustomerResponse {
+  found: boolean;
+  contact?: ReturningCustomer;
+  message?: string;
+}
 
 export interface BookingResult {
   accountName: string;

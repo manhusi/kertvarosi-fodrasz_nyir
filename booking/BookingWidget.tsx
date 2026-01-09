@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchAvailability, createBooking, BookingApiError } from './api';
+import { fetchAvailability, createBooking, identifyReturningCustomer, BookingApiError } from './api';
 import {
     Slot,
     AvailabilityResponse,
     BookingStep,
     BookingFormData,
     BookingResult,
+    ReturningCustomer,
 } from './types';
 
 const WEEKDAYS = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
@@ -34,11 +35,18 @@ interface BookingWidgetProps {
 }
 
 export function BookingWidget({ initialService }: BookingWidgetProps) {
-    const [step, setStep] = useState<BookingStep>('service');
+    const [step, setStep] = useState<BookingStep>('customer-type');
     const [availability, setAvailability] = useState<AvailabilityResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Customer type and returning customer states
+    const [customerType, setCustomerType] = useState<'new' | 'returning' | null>(null);
+    const [returningCustomer, setReturningCustomer] = useState<ReturningCustomer | null>(null);
+    const [identifyData, setIdentifyData] = useState({ email: '', phone: '' });
+    const [identifyError, setIdentifyError] = useState<string | null>(null);
+    const [identifying, setIdentifying] = useState(false);
 
     const [selectedService, setSelectedService] = useState<string | null>(initialService || null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -64,13 +72,23 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
                 const data = await fetchAvailability();
                 setAvailability(data);
 
-                // Auto-select service if provided via prop OR if only one service exists
-                if (initialService) {
+                // Determine initial step based on API configuration
+                const isHairsalon = data.has_returning_customers || data.account_type === 'fodraszat';
+
+                if (isHairsalon) {
+                    // Has returning customer feature - start with customer type selection
+                    setStep('customer-type');
+                } else if (initialService) {
+                    // Auto-select service if provided via prop
                     setSelectedService(initialService);
                     setStep('date');
                 } else if (data.service_id.length === 1) {
+                    // Auto-select if only one service
                     setSelectedService(data.service_id[0]);
                     setStep('date');
+                } else {
+                    // Multiple services, start with service selection
+                    setStep('service');
                 }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Hiba történt');
@@ -80,7 +98,7 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
         };
 
         loadAvailability();
-    }, [initialService]); // Add initialService to dependency array
+    }, [initialService]);
 
     // Get all available services
     const availableServices = useMemo(() => {
@@ -118,19 +136,27 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
 
     // Get slots filtered by selected service
     const slotsForService = useMemo(() => {
-        if (!availability || !selectedServiceName) return [];
+        if (!availability) return [];
+
+        // If we have a returning customer, the slots are already filtered by duration from the API
+        // So we just return all slots
+        if (returningCustomer) {
+            return availability.slots;
+        }
+
+        if (!selectedServiceName) return [];
 
         return availability.slots.filter(s => {
             if (!s.available_services || s.available_services.length === 0) return true;
 
-            // Special handling for returning customers
+            // Special handling for returning customers (legacy/manual selection)
             if (selectedService === 'returning') {
                 return s.available_services.includes('Visszatérő');
             }
 
             return s.available_services.includes(selectedServiceName) || s.available_services.includes(selectedService!);
         });
-    }, [availability, selectedServiceName, selectedService]);
+    }, [availability, selectedServiceName, selectedService, returningCustomer]);
 
     // ... (availableDates, slotsForDate, availableHours logic remains mostly same)
 
@@ -168,41 +194,6 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
         return slotsForHour.find(s => s.time === `${selectedHour}:${selectedMinute}`) || null;
     }, [slotsForHour, selectedHour, selectedMinute]);
 
-    // FETCH Availability
-    useEffect(() => {
-        const loadAvailability = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const data = await fetchAvailability();
-                setAvailability(data);
-
-                // Auto-select logic
-                if (initialService) {
-                    // Check if initialService matches a name in the new services list, and get its ID
-                    const serviceObj = data.services?.find(s => s.name === initialService);
-                    if (serviceObj) {
-                        setSelectedService(serviceObj.id);
-                        setStep('date');
-                    } else {
-                        // Fallback or partial text match could go here
-                    }
-                } else if (data.services && data.services.length === 1) {
-                    setSelectedService(data.services[0].id);
-                    setStep('date');
-                }
-            } catch (err) {
-                setError(err instanceof Error ? err.message : 'Hiba történt');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadAvailability();
-    }, [initialService]);
-
-    // ...
-
     // Calendar helpers
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
@@ -231,6 +222,60 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
     const todayStr = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
     // Handlers
+    const handleCustomerTypeSelect = (type: 'new' | 'returning') => {
+        setCustomerType(type);
+        setIdentifyError(null);
+        if (type === 'new') {
+            setStep('service');
+        } else {
+            setStep('returning-identify');
+        }
+    };
+
+    const handleIdentifySubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!identifyData.email && !identifyData.phone) {
+            setIdentifyError('Kérjük, adjon meg email címet vagy telefonszámot!');
+            return;
+        }
+
+        try {
+            setIdentifying(true);
+            setIdentifyError(null);
+            const response = await identifyReturningCustomer(identifyData);
+
+            if (response.found && response.contact) {
+                setReturningCustomer(response.contact);
+                // Pre-fill form with available data
+                setFormData(prev => ({
+                    ...prev,
+                    name: response.contact!.name,
+                    // Use email/phone from API if available, otherwise use what was entered for identification
+                    email: response.contact!.email || identifyData.email || prev.email,
+                    phone: response.contact!.phone || identifyData.phone || prev.phone
+                }));
+                // Fetch availability with duration filter
+                const data = await fetchAvailability(response.contact.usual_duration_minutes);
+                setAvailability(data);
+                // Skip service selection, go straight to date
+                setStep('date');
+            } else {
+                setIdentifyError(response.message || 'Nem találtunk ilyen vendéget.');
+            }
+        } catch (err) {
+            setIdentifyError(err instanceof Error ? err.message : 'Hiba az azonosítás során');
+        } finally {
+            setIdentifying(false);
+        }
+    };
+
+    const handleContinueAsNew = () => {
+        setCustomerType('new');
+        setIdentifyError(null);
+        setIdentifyData({ email: '', phone: '' });
+        setStep('service');
+    };
+
     const handleServiceSelect = (service: string) => {
         setSelectedService(service);
         setSelectedDate(null);
@@ -277,10 +322,23 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedSlot || !selectedService) return;
 
-        const serviceObj = availableServices.find(s => s.id === selectedService);
-        if (!serviceObj) return;
+        // If returning customer, we don't need selectedService
+        if (!selectedSlot && !(returningCustomer || selectedService)) return;
+
+        // Find service object only if not a returning customer logic
+        let serviceName = '';
+        let serviceId: string | undefined = undefined;
+
+        if (returningCustomer) {
+            serviceName = 'Visszatérő vendég';
+        } else {
+            if (!selectedService) return;
+            const serviceObj = availableServices.find(s => s.id === selectedService);
+            if (!serviceObj) return;
+            serviceName = serviceObj.name;
+            serviceId = serviceObj.id === 'returning' ? undefined : serviceObj.id;
+        }
 
         try {
             setSubmitting(true);
@@ -288,10 +346,10 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
 
             const response = await createBooking({
                 name: formData.name,
-                datetime: selectedSlot.datetime,
-                service: serviceObj.name, // Name is still required by backend
-                service_id: serviceObj.id === 'returning' ? undefined : serviceObj.id, // UUID or undefined for returning
-                is_returning: serviceObj.id === 'returning' ? true : undefined,
+                datetime: selectedSlot!.datetime, // We know selectedSlot is set here
+                service: serviceName,
+                service_id: serviceId,
+                is_returning: customerType === 'returning',
                 email: formData.email || undefined,
                 phone: formData.phone || undefined,
                 notes: formData.notes || undefined,
@@ -302,9 +360,9 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
 
             setBookingResult({
                 accountName: availability?.account_name || '',
-                date: selectedSlot.date,
-                time: selectedSlot.time,
-                service: serviceObj.name,
+                date: selectedSlot!.date,
+                time: selectedSlot!.time,
+                service: serviceName,
                 serviceDetails: priceDetails,
             });
             setStep('success');
@@ -324,7 +382,11 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
     };
 
     const handleReset = () => {
-        setStep('service');
+        // Reset all state
+        setCustomerType(null);
+        setReturningCustomer(null);
+        setIdentifyData({ email: '', phone: '' });
+        setIdentifyError(null);
         setSelectedService(null);
         setSelectedDate(null);
         setSelectedHour(null);
@@ -336,9 +398,15 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
         fetchAvailability()
             .then((data) => {
                 setAvailability(data);
-                if (data.service_id.length === 1) {
+                const isHairsalon = data.has_returning_customers || data.account_type === 'fodraszat';
+
+                if (isHairsalon) {
+                    setStep('customer-type');
+                } else if (data.service_id.length === 1) {
                     setSelectedService(data.service_id[0]);
                     setStep('date');
+                } else {
+                    setStep('service');
                 }
             })
             .catch(() => { });
@@ -346,8 +414,20 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
 
     const handleBack = () => {
         switch (step) {
+            case 'returning-identify':
+                setStep('customer-type');
+                setIdentifyError(null);
+                break;
+            case 'service':
+                if (availability?.has_returning_customers || availability?.account_type === 'fodraszat') {
+                    setStep('customer-type');
+                }
+                break;
             case 'date':
-                if (availableServices.length > 1) {
+                if (customerType === 'returning') {
+                    // Returning customers skip service selection
+                    setStep('returning-identify');
+                } else if (availableServices.length > 1) {
                     setStep('service');
                     setSelectedDate(null);
                 }
@@ -371,12 +451,14 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
         });
     };
 
-    const stepIndex = { service: 0, date: 1, time: 2, form: 3, success: 4 };
+    const stepIndex = { 'customer-type': 0, 'returning-identify': 0, service: 0, date: 1, time: 2, form: 3, success: 4 };
     const totalSteps = 4;
 
     // Get step subtitle
     const getStepSubtitle = () => {
         switch (step) {
+            case 'customer-type': return 'Válasszon vendég típust';
+            case 'returning-identify': return returningCustomer ? `Szia ${returningCustomer.name}!` : 'Azonosítás';
             case 'service': return 'Válasszon szolgáltatást';
             case 'date': return 'Válasszon napot';
             case 'time': return 'Válasszon időpontot';
@@ -441,6 +523,146 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
                         </div>
                     )}
 
+                    {/* Step 0: Customer Type Selection */}
+                    {step === 'customer-type' && (
+                        <div className="booking-widget__fade-in">
+                            <div className="booking-widget__service-list">
+                                <button
+                                    type="button"
+                                    className="booking-widget__service-card"
+                                    onClick={() => handleCustomerTypeSelect('new')}
+                                >
+                                    <div className="flex flex-col items-start gap-1">
+                                        <span className="booking-widget__service-name text-left">Új vendég vagyok</span>
+                                        <span className="text-sm text-gray-400">Első alkalommal foglalok időpontot</span>
+                                    </div>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="booking-widget__service-card"
+                                    onClick={() => handleCustomerTypeSelect('returning')}
+                                >
+                                    <div className="flex flex-col items-start gap-1">
+                                        <span className="booking-widget__service-name text-left">Visszatérő vendég vagyok</span>
+                                        <span className="text-sm text-gray-400">Már voltam itt korábban</span>
+                                    </div>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 0b: Returning Customer Identification */}
+                    {step === 'returning-identify' && (
+                        <div className="booking-widget__fade-in">
+                            {returningCustomer ? (
+                                // Successfully identified
+                                <div className="booking-widget__success-message" style={{ marginBottom: '1.5rem' }}>
+                                    <div className="booking-widget__success-icon" style={{ width: '48px', height: '48px', marginBottom: '1rem' }}>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M20 6L9 17l-5-5" />
+                                        </svg>
+                                    </div>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                        Szia {returningCustomer.name}! 👋
+                                    </h3>
+                                    <p style={{ color: '#64748b', marginBottom: '0.5rem' }}>
+                                        {returningCustomer.usual_duration_minutes} perc az időtartamod
+                                    </p>
+                                    <button
+                                        type="button"
+                                        className="booking-widget__button booking-widget__button--primary"
+                                        onClick={() => setStep('date')}
+                                        style={{ marginTop: '1rem' }}
+                                    >
+                                        Időpont választása
+                                    </button>
+                                </div>
+                            ) : (
+                                // Identification form
+                                <form onSubmit={handleIdentifySubmit} className="booking-widget__form">
+                                    <p style={{ marginBottom: '1.5rem', color: '#64748b' }}>
+                                        Add meg az email címedet vagy a telefonszámodat az azonosításhoz.
+                                    </p>
+
+                                    {identifyError && (
+                                        <div className="booking-widget__error" style={{ marginBottom: '1rem' }}>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="12" y1="8" x2="12" y2="12" />
+                                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                                            </svg>
+                                            {identifyError}
+                                        </div>
+                                    )}
+
+                                    {identifyError && (
+                                        <button
+                                            type="button"
+                                            className="booking-widget__button booking-widget__button--secondary"
+                                            onClick={handleContinueAsNew}
+                                            style={{ marginBottom: '1.5rem', width: '100%' }}
+                                        >
+                                            Új vendégként folytatom
+                                        </button>
+                                    )}
+
+                                    <div className="booking-widget__field">
+                                        <label className="booking-widget__label">Email</label>
+                                        <input
+                                            type="email"
+                                            className="booking-widget__input"
+                                            placeholder="pelda@email.com"
+                                            value={identifyData.email}
+                                            onChange={(e) => setIdentifyData(prev => ({ ...prev, email: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="booking-widget__field">
+                                        <label className="booking-widget__label">Telefonszám</label>
+                                        <input
+                                            type="tel"
+                                            className="booking-widget__input"
+                                            placeholder="+36 30 123 4567"
+                                            value={identifyData.phone}
+                                            onChange={(e) => setIdentifyData(prev => ({ ...prev, phone: e.target.value }))}
+                                        />
+                                    </div>
+
+                                    <div className="booking-widget__nav">
+                                        <button
+                                            type="button"
+                                            className="booking-widget__button booking-widget__button--secondary"
+                                            onClick={handleBack}
+                                            disabled={identifying}
+                                        >
+                                            Vissza
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="booking-widget__button booking-widget__button--primary"
+                                            disabled={identifying || (!identifyData.email && !identifyData.phone)}
+                                        >
+                                            {identifying ? (
+                                                <>
+                                                    <span className="booking-widget__spinner" />
+                                                    Azonosítás...
+                                                </>
+                                            ) : (
+                                                'Tovább'
+                                            )}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
+                    )}
+
                     {/* Step 1: Service Selection */}
                     {step === 'service' && (
                         <div className="booking-widget__fade-in">
@@ -473,6 +695,19 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
                                     );
                                 })}
                             </div>
+
+                            {/* Navigation */}
+                            {(availability?.has_returning_customers || availability?.account_type === 'fodraszat') && (
+                                <div className="booking-widget__nav">
+                                    <button
+                                        type="button"
+                                        className="booking-widget__button booking-widget__button--secondary"
+                                        onClick={handleBack}
+                                    >
+                                        Vissza
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -480,11 +715,16 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
                     {step === 'date' && (
                         <div className="booking-widget__fade-in">
                             {/* Selected Service Summary */}
-                            <div className="booking-widget__selection-summary">
-                                <span className="booking-widget__summary-text">
-                                    🎯 {selectedServiceName}
-                                </span>
-                            </div>
+                            {(selectedServiceName || returningCustomer) && (
+                                <div className="booking-widget__selection-summary">
+                                    <span className="booking-widget__summary-text">
+                                        {returningCustomer
+                                            ? `👋 ${returningCustomer.name} • ${returningCustomer.usual_duration_minutes} perc`
+                                            : `🎯 ${selectedServiceName}`
+                                        }
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Calendar */}
                             <div className="booking-widget__calendar">
@@ -562,7 +802,7 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
                             </div>
 
                             {/* Navigation */}
-                            {availableServices.length > 1 && (
+                            {(availableServices.length > 1 || customerType === 'returning') && (
                                 <div className="booking-widget__nav">
                                     <button
                                         type="button"

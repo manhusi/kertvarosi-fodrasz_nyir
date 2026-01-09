@@ -1,9 +1,14 @@
-import { AvailabilityResponse, BookingRequest } from './types';
+import {
+    AvailabilityResponse,
+    BookingRequest,
+    IdentifyCustomerRequest,
+    IdentifyCustomerResponse
+} from './types';
 
 // Bence Masszázs API configuration
 const BASE_URL = 'https://jdwhmvruzbvkzgfdousz.supabase.co/functions/v1';
-const PUBLIC_API_KEY = 'WZHD5CZdxGvqHvliJEqF6khhF2DhbSgOtORcPdpvkU9RTqTU';
-const BOOKING_API_KEY = 'BEdixULpkG3rVntYxWCjuXz6PZOn5rd1ZPhKzn8oTFH8YGse';
+const PUBLIC_API_KEY = '78EIFxt4yHhvFoqiygMBHGKWTR8FzNiOwCvGnimsJInHcuo3';
+const BOOKING_API_KEY = 'aDLEj5fxvN6b5IItp0GDcYIbkLgyVK4aLmSdtYQBP6EUfw8U';
 
 export class BookingApiError extends Error {
     constructor(
@@ -16,8 +21,34 @@ export class BookingApiError extends Error {
     }
 }
 
-export async function fetchAvailability(): Promise<AvailabilityResponse> {
-    const response = await fetch(`${BASE_URL}/get-availability`, {
+export async function identifyReturningCustomer(
+    data: IdentifyCustomerRequest
+): Promise<IdentifyCustomerResponse> {
+    const response = await fetch(`${BASE_URL}/identify-returning-customer`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${PUBLIC_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        throw new BookingApiError(
+            'Nem sikerült azonosítani a vendéget',
+            response.status
+        );
+    }
+
+    return response.json();
+}
+
+export async function fetchAvailability(duration?: number): Promise<AvailabilityResponse> {
+    const url = duration
+        ? `${BASE_URL}/get-availability?duration=${duration}`
+        : `${BASE_URL}/get-availability`;
+
+    const response = await fetch(url, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${PUBLIC_API_KEY}`,
