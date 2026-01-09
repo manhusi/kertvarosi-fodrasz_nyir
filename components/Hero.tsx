@@ -45,7 +45,7 @@ export const Hero: React.FC = () => {
             {/* Icon/Logo */}
             <div className="flex w-32 h-32 lg:w-40 lg:h-40 rounded-2xl items-center justify-center mx-auto lg:mx-0 transition-transform overflow-hidden shadow-2xl shadow-barbershop-anthracite/20 mb-6 lg:mb-0">
               <img
-                src="/images/logo.jpg"
+                src="/images/logo.png"
                 alt="Kertvárosi Fodrászat Logo"
                 className="w-full h-full object-cover"
               />
