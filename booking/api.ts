@@ -1,9 +1,9 @@
 import { AvailabilityResponse, BookingRequest } from './types';
 
-// Kertvárosi Fodrászat API configuration
+// Bence Masszázs API configuration
 const BASE_URL = 'https://jdwhmvruzbvkzgfdousz.supabase.co/functions/v1';
-const PUBLIC_API_KEY = 'angL3FmH0SzxfQd1KpTODiodaegzqiNDD36CH4rHFCpg6Ffw';
-const BOOKING_API_KEY = 'G4ui9UlnchGO1KkgYF6nWa1aK2OPt5MPYXKZVa3m2hAC3XIz';
+const PUBLIC_API_KEY = 'WZHD5CZdxGvqHvliJEqF6khhF2DhbSgOtORcPdpvkU9RTqTU';
+const BOOKING_API_KEY = 'BEdixULpkG3rVntYxWCjuXz6PZOn5rd1ZPhKzn8oTFH8YGse';
 
 export class BookingApiError extends Error {
     constructor(
@@ -35,14 +35,29 @@ export async function fetchAvailability(): Promise<AvailabilityResponse> {
     return response.json();
 }
 
-export async function createBooking(data: BookingRequest): Promise<void> {
+export interface BookingResponse {
+    success: boolean;
+    booking: {
+        id: string;
+        service_details?: {
+            price: number;
+            currency: string;
+            duration_minutes: number;
+        };
+    };
+}
+
+export async function createBooking(data: BookingRequest): Promise<BookingResponse> {
     const response = await fetch(`${BASE_URL}/create-booking`, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${BOOKING_API_KEY}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+            ...data,
+            include_price: true, // Always request price
+        }),
     });
 
     if (response.status === 409) {
@@ -59,4 +74,6 @@ export async function createBooking(data: BookingRequest): Promise<void> {
             response.status
         );
     }
+
+    return response.json();
 }

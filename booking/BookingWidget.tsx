@@ -22,16 +22,28 @@ function formatDate(dateStr: string): string {
     return `${year}. ${month} ${day}.`;
 }
 
-export function BookingWidget() {
-    const [step, setStep] = useState<BookingStep>('date');
+function formatShortDate(dateStr: string): string {
+    const date = new Date(dateStr);
+    const month = MONTHS[date.getMonth()];
+    const day = date.getDate();
+    return `${month} ${day}.`;
+}
+
+interface BookingWidgetProps {
+    initialService?: string | null;
+}
+
+export function BookingWidget({ initialService }: BookingWidgetProps) {
+    const [step, setStep] = useState<BookingStep>('service');
     const [availability, setAvailability] = useState<AvailabilityResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const [selectedService, setSelectedService] = useState<string | null>(initialService || null);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
-    const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
-    const [selectedService, setSelectedService] = useState<string | null>(null);
+    const [selectedHour, setSelectedHour] = useState<string | null>(null);
+    const [selectedMinute, setSelectedMinute] = useState<string | null>(null);
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
     const [formData, setFormData] = useState<BookingFormData>({
@@ -52,9 +64,13 @@ export function BookingWidget() {
                 const data = await fetchAvailability();
                 setAvailability(data);
 
-                // Auto-select service if only one
-                if (data.service_id.length === 1) {
+                // Auto-select service if provided via prop OR if only one service exists
+                if (initialService) {
+                    setSelectedService(initialService);
+                    setStep('date');
+                } else if (data.service_id.length === 1) {
                     setSelectedService(data.service_id[0]);
+                    setStep('date');
                 }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Hiba történt');
@@ -64,19 +80,128 @@ export function BookingWidget() {
         };
 
         loadAvailability();
-    }, []);
+    }, [initialService]); // Add initialService to dependency array
 
-    // Get available dates
-    const availableDates = useMemo(() => {
-        if (!availability) return new Set<string>();
-        return new Set(availability.slots.map((slot) => slot.date));
+    // Get all available services
+    const availableServices = useMemo(() => {
+        if (!availability) return [];
+        let services: any[] = [];
+
+        // Prefer the detailed 'services' array if available
+        if (availability.services && availability.services.length > 0) {
+            services = [...availability.services];
+        }
+
+        // Add returning customer option if enabled
+        if (availability.has_returning_customers) {
+            services.push({
+                id: 'returning',
+                name: 'Visszatérő vagyok',
+                price: 0,
+                currency: '',
+                duration_minutes: 0,
+                isReturning: true
+            });
+        }
+
+        return services;
     }, [availability]);
+
+    // Backward compatibility for slot filtering (slots might still use names)
+    // We need to map selected service ID back to name if slots rely on names
+    const selectedServiceName = useMemo(() => {
+        if (!selectedService) return null;
+        const service = availableServices.find(s => s.id === selectedService);
+        return service ? service.name : selectedService;
+    }, [selectedService, availableServices]);
+
+
+    // Get slots filtered by selected service
+    const slotsForService = useMemo(() => {
+        if (!availability || !selectedServiceName) return [];
+
+        return availability.slots.filter(s => {
+            if (!s.available_services || s.available_services.length === 0) return true;
+
+            // Special handling for returning customers
+            if (selectedService === 'returning') {
+                return s.available_services.includes('Visszatérő');
+            }
+
+            return s.available_services.includes(selectedServiceName) || s.available_services.includes(selectedService!);
+        });
+    }, [availability, selectedServiceName, selectedService]);
+
+    // ... (availableDates, slotsForDate, availableHours logic remains mostly same)
+
+    // Get available dates for selected service
+    const availableDates = useMemo(() => {
+        return new Set(slotsForService.map(slot => slot.date));
+    }, [slotsForService]);
 
     // Get slots for selected date
     const slotsForDate = useMemo(() => {
-        if (!availability || !selectedDate) return [];
-        return availability.slots.filter((slot) => slot.date === selectedDate);
-    }, [availability, selectedDate]);
+        if (!selectedDate) return [];
+        return slotsForService.filter(slot => slot.date === selectedDate);
+    }, [slotsForService, selectedDate]);
+
+    // Get available hours for selected date (unique, sorted)
+    const availableHours = useMemo(() => {
+        const hours = [...new Set(slotsForDate.map(s => s.time.split(':')[0]))].sort();
+        return hours;
+    }, [slotsForDate]);
+
+    // Get slots for selected hour
+    const slotsForHour = useMemo(() => {
+        if (!selectedHour) return [];
+        return slotsForDate.filter(s => s.time.startsWith(selectedHour + ':'));
+    }, [slotsForDate, selectedHour]);
+
+    // Get available minutes for selected hour
+    const availableMinutes = useMemo(() => {
+        return slotsForHour.map(s => s.time.split(':')[1]);
+    }, [slotsForHour]);
+
+    // Get the selected slot
+    const selectedSlot = useMemo(() => {
+        if (!selectedHour || !selectedMinute) return null;
+        return slotsForHour.find(s => s.time === `${selectedHour}:${selectedMinute}`) || null;
+    }, [slotsForHour, selectedHour, selectedMinute]);
+
+    // FETCH Availability
+    useEffect(() => {
+        const loadAvailability = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const data = await fetchAvailability();
+                setAvailability(data);
+
+                // Auto-select logic
+                if (initialService) {
+                    // Check if initialService matches a name in the new services list, and get its ID
+                    const serviceObj = data.services?.find(s => s.name === initialService);
+                    if (serviceObj) {
+                        setSelectedService(serviceObj.id);
+                        setStep('date');
+                    } else {
+                        // Fallback or partial text match could go here
+                    }
+                } else if (data.services && data.services.length === 1) {
+                    setSelectedService(data.services[0].id);
+                    setStep('date');
+                }
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Hiba történt');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadAvailability();
+    }, [initialService]);
+
+    // ...
 
     // Calendar helpers
     const getDaysInMonth = (date: Date) => {
@@ -105,6 +230,15 @@ export function BookingWidget() {
     const today = new Date();
     const todayStr = formatDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
+    // Handlers
+    const handleServiceSelect = (service: string) => {
+        setSelectedService(service);
+        setSelectedDate(null);
+        setSelectedHour(null);
+        setSelectedMinute(null);
+        setStep('date');
+    };
+
     const handleDateSelect = (day: number) => {
         const dateKey = formatDateKey(
             currentMonth.getFullYear(),
@@ -112,16 +246,24 @@ export function BookingWidget() {
             day
         );
         setSelectedDate(dateKey);
-        setSelectedSlot(null);
+        setSelectedHour(null);
+        setSelectedMinute(null);
         setStep('time');
     };
 
-    const handleSlotSelect = (slot: Slot) => {
-        setSelectedSlot(slot);
+    const handleHourSelect = (hour: string) => {
+        setSelectedHour(hour);
+        setSelectedMinute(null);
     };
 
-    const handleServiceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedService(e.target.value);
+    const handleMinuteSelect = (minute: string) => {
+        setSelectedMinute(minute);
+    };
+
+    const handleContinueToForm = () => {
+        if (selectedSlot) {
+            setStep('form');
+        }
     };
 
     const handleFormChange = (
@@ -133,41 +275,46 @@ export function BookingWidget() {
         }));
     };
 
-    const handleContinueToForm = () => {
-        if (selectedSlot && selectedService) {
-            setStep('form');
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedSlot || !selectedService) return;
+
+        const serviceObj = availableServices.find(s => s.id === selectedService);
+        if (!serviceObj) return;
 
         try {
             setSubmitting(true);
             setError(null);
 
-            await createBooking({
+            const response = await createBooking({
                 name: formData.name,
                 datetime: selectedSlot.datetime,
-                service: selectedService,
+                service: serviceObj.name, // Name is still required by backend
+                service_id: serviceObj.id === 'returning' ? undefined : serviceObj.id, // UUID or undefined for returning
+                is_returning: serviceObj.id === 'returning' ? true : undefined,
                 email: formData.email || undefined,
                 phone: formData.phone || undefined,
                 notes: formData.notes || undefined,
             });
 
+            // Extract price from response if available
+            const priceDetails = response.booking.service_details;
+
             setBookingResult({
                 accountName: availability?.account_name || '',
                 date: selectedSlot.date,
                 time: selectedSlot.time,
-                service: selectedService,
+                service: serviceObj.name,
+                serviceDetails: priceDetails,
             });
             setStep('success');
         } catch (err) {
+            // ... rest of error handling
             if (err instanceof BookingApiError && err.isSlotTaken) {
                 setError('Ez az időpont már nem elérhető. Kérjük, válasszon másikat.');
                 setStep('time');
-                setSelectedSlot(null);
+                setSelectedHour(null);
+                setSelectedMinute(null);
             } else {
                 setError(err instanceof Error ? err.message : 'Hiba történt');
             }
@@ -177,30 +324,42 @@ export function BookingWidget() {
     };
 
     const handleReset = () => {
-        setStep('date');
+        setStep('service');
+        setSelectedService(null);
         setSelectedDate(null);
-        setSelectedSlot(null);
+        setSelectedHour(null);
+        setSelectedMinute(null);
         setFormData({ name: '', email: '', phone: '', notes: '' });
         setBookingResult(null);
         setError(null);
 
-        // Reload availability
         fetchAvailability()
             .then((data) => {
                 setAvailability(data);
                 if (data.service_id.length === 1) {
                     setSelectedService(data.service_id[0]);
+                    setStep('date');
                 }
             })
             .catch(() => { });
     };
 
     const handleBack = () => {
-        if (step === 'time') {
-            setStep('date');
-            setSelectedSlot(null);
-        } else if (step === 'form') {
-            setStep('time');
+        switch (step) {
+            case 'date':
+                if (availableServices.length > 1) {
+                    setStep('service');
+                    setSelectedDate(null);
+                }
+                break;
+            case 'time':
+                setStep('date');
+                setSelectedHour(null);
+                setSelectedMinute(null);
+                break;
+            case 'form':
+                setStep('time');
+                break;
         }
     };
 
@@ -212,7 +371,19 @@ export function BookingWidget() {
         });
     };
 
-    const stepIndex = { date: 0, time: 1, form: 2, success: 3 };
+    const stepIndex = { service: 0, date: 1, time: 2, form: 3, success: 4 };
+    const totalSteps = 4;
+
+    // Get step subtitle
+    const getStepSubtitle = () => {
+        switch (step) {
+            case 'service': return 'Válasszon szolgáltatást';
+            case 'date': return 'Válasszon napot';
+            case 'time': return 'Válasszon időpontot';
+            case 'form': return 'Adja meg adatait';
+            case 'success': return 'Sikeres foglalás';
+        }
+    };
 
     // Loading state
     if (loading) {
@@ -236,10 +407,7 @@ export function BookingWidget() {
                         {availability?.account_name || 'Időpontfoglalás'}
                     </h2>
                     <p className="booking-widget__subtitle">
-                        {step === 'date' && 'Válasszon dátumot'}
-                        {step === 'time' && 'Válasszon időpontot'}
-                        {step === 'form' && 'Adja meg adatait'}
-                        {step === 'success' && 'Sikeres foglalás'}
+                        {getStepSubtitle()}
                     </p>
                 </div>
 
@@ -247,7 +415,7 @@ export function BookingWidget() {
                     {/* Step Indicator */}
                     {step !== 'success' && (
                         <div className="booking-widget__steps">
-                            {[0, 1, 2].map((i) => (
+                            {Array.from({ length: totalSteps }).map((_, i) => (
                                 <div
                                     key={i}
                                     className={`booking-widget__step-dot ${i === stepIndex[step]
@@ -273,9 +441,52 @@ export function BookingWidget() {
                         </div>
                     )}
 
-                    {/* Date Selection */}
+                    {/* Step 1: Service Selection */}
+                    {step === 'service' && (
+                        <div className="booking-widget__fade-in">
+                            <div className="booking-widget__service-list">
+                                {availableServices.map((service) => {
+                                    const isObject = typeof service !== 'string';
+                                    const serviceId = isObject ? service.id : service;
+                                    const serviceName = isObject ? service.name : service;
+                                    const servicePrice = isObject ? `${service.price} ${service.currency}` : '';
+
+                                    return (
+                                        <button
+                                            key={serviceId}
+                                            type="button"
+                                            className="booking-widget__service-card"
+                                            onClick={() => handleServiceSelect(serviceId)}
+                                        >
+                                            <div className="flex flex-col items-start gap-1">
+                                                <span className="booking-widget__service-name text-left">{serviceName}</span>
+                                                {servicePrice && (
+                                                    <span className="text-sm text-gray-400 font-medium">
+                                                        {servicePrice}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M9 18l6-6-6-6" />
+                                            </svg>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 2: Date Selection */}
                     {step === 'date' && (
                         <div className="booking-widget__fade-in">
+                            {/* Selected Service Summary */}
+                            <div className="booking-widget__selection-summary">
+                                <span className="booking-widget__summary-text">
+                                    🎯 {selectedServiceName}
+                                </span>
+                            </div>
+
+                            {/* Calendar */}
                             <div className="booking-widget__calendar">
                                 <div className="booking-widget__calendar-header">
                                     <span className="booking-widget__calendar-title">
@@ -331,7 +542,6 @@ export function BookingWidget() {
                                         );
                                         const hasSlots = availableDates.has(dateKey);
                                         const isToday = dateKey === todayStr;
-                                        const isSelected = dateKey === selectedDate;
                                         const isPast = new Date(dateKey) < new Date(todayStr);
 
                                         return (
@@ -339,7 +549,7 @@ export function BookingWidget() {
                                                 key={day}
                                                 type="button"
                                                 className={`booking-widget__day ${isToday ? 'booking-widget__day--today' : ''
-                                                    } ${isSelected ? 'booking-widget__day--selected' : ''} ${!hasSlots || isPast ? 'booking-widget__day--disabled' : ''
+                                                    } ${!hasSlots || isPast ? 'booking-widget__day--disabled' : ''
                                                     } ${hasSlots && !isPast ? 'booking-widget__day--has-slots' : ''}`}
                                                 onClick={() => hasSlots && !isPast && handleDateSelect(day)}
                                                 disabled={!hasSlots || isPast}
@@ -350,66 +560,74 @@ export function BookingWidget() {
                                     })}
                                 </div>
                             </div>
+
+                            {/* Navigation */}
+                            {availableServices.length > 1 && (
+                                <div className="booking-widget__nav">
+                                    <button
+                                        type="button"
+                                        className="booking-widget__button booking-widget__button--secondary"
+                                        onClick={handleBack}
+                                    >
+                                        Vissza
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {/* Time Selection */}
+                    {/* Step 3: Time Selection (Hour + Minute on ONE screen) */}
                     {step === 'time' && (
                         <div className="booking-widget__fade-in">
-                            {/* Selected Date Summary */}
-                            <div className="booking-widget__selected-summary">
-                                <span className="booking-widget__selected-info">
-                                    📅 {selectedDate && formatDate(selectedDate)}
+                            {/* Summary */}
+                            <div className="booking-widget__selection-summary">
+                                <span className="booking-widget__summary-text">
+                                    🎯 {selectedServiceName} • {selectedDate && formatShortDate(selectedDate)}
+                                    {selectedHour && selectedMinute && ` • ${selectedHour}:${selectedMinute}`}
                                 </span>
-                                <button
-                                    type="button"
-                                    className="booking-widget__selected-change"
-                                    onClick={handleBack}
-                                >
-                                    Módosítás
-                                </button>
                             </div>
 
-                            {/* Service Selector */}
-                            {availability && availability.service_id.length > 1 && (
-                                <div className="booking-widget__service-selector">
-                                    <label className="booking-widget__label">Szolgáltatás</label>
-                                    <select
-                                        className="booking-widget__select"
-                                        value={selectedService || ''}
-                                        onChange={handleServiceChange}
-                                    >
-                                        <option value="">Válasszon szolgáltatást...</option>
-                                        {availability.service_id.map((service) => (
-                                            <option key={service} value={service}>
-                                                {service}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
-                            {/* Time Slots */}
-                            <label className="booking-widget__label">Elérhető időpontok</label>
-                            {slotsForDate.length > 0 ? (
-                                <div className="booking-widget__slots">
-                                    {slotsForDate.map((slot) => (
+                            {/* Hour Selection */}
+                            <div className="booking-widget__time-section">
+                                <label className="booking-widget__label booking-widget__label--step">
+                                    <span className="booking-widget__step-number">1</span>
+                                    Válasszon órát
+                                </label>
+                                <div className="booking-widget__time-grid">
+                                    {availableHours.map((hour) => (
                                         <button
-                                            key={slot.datetime}
+                                            key={hour}
                                             type="button"
-                                            className={`booking-widget__slot ${selectedSlot?.datetime === slot.datetime
-                                                ? 'booking-widget__slot--selected'
-                                                : ''
+                                            className={`booking-widget__time-btn ${selectedHour === hour ? 'booking-widget__time-btn--selected' : ''
                                                 }`}
-                                            onClick={() => handleSlotSelect(slot)}
+                                            onClick={() => handleHourSelect(hour)}
                                         >
-                                            {slot.time}
+                                            {hour}:00
                                         </button>
                                     ))}
                                 </div>
-                            ) : (
-                                <div className="booking-widget__empty">
-                                    Nincs elérhető időpont ezen a napon
+                            </div>
+
+                            {/* Minute Selection (appears after hour is selected) */}
+                            {selectedHour && (
+                                <div className="booking-widget__time-section booking-widget__fade-in">
+                                    <label className="booking-widget__label booking-widget__label--step">
+                                        <span className="booking-widget__step-number">2</span>
+                                        Válasszon percet
+                                    </label>
+                                    <div className="booking-widget__time-grid">
+                                        {availableMinutes.map((minute) => (
+                                            <button
+                                                key={minute}
+                                                type="button"
+                                                className={`booking-widget__time-btn ${selectedMinute === minute ? 'booking-widget__time-btn--selected' : ''
+                                                    }`}
+                                                onClick={() => handleMinuteSelect(minute)}
+                                            >
+                                                {selectedHour}:{minute}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
 
@@ -426,7 +644,7 @@ export function BookingWidget() {
                                     type="button"
                                     className="booking-widget__button booking-widget__button--primary"
                                     onClick={handleContinueToForm}
-                                    disabled={!selectedSlot || !selectedService}
+                                    disabled={!selectedSlot}
                                 >
                                     Tovább
                                 </button>
@@ -434,21 +652,14 @@ export function BookingWidget() {
                         </div>
                     )}
 
-                    {/* Form */}
+                    {/* Step 4: Form */}
                     {step === 'form' && (
                         <div className="booking-widget__fade-in">
                             {/* Selected Summary */}
-                            <div className="booking-widget__selected-summary">
-                                <span className="booking-widget__selected-info">
-                                    📅 {selectedDate && formatDate(selectedDate)} – {selectedSlot?.time}
+                            <div className="booking-widget__selection-summary">
+                                <span className="booking-widget__summary-text">
+                                    🎯 {selectedServiceName} • {selectedDate && formatShortDate(selectedDate)} • {selectedHour}:{selectedMinute}
                                 </span>
-                                <button
-                                    type="button"
-                                    className="booking-widget__selected-change"
-                                    onClick={() => setStep('time')}
-                                >
-                                    Módosítás
-                                </button>
                             </div>
 
                             <form className="booking-widget__form" onSubmit={handleSubmit}>
@@ -468,19 +679,27 @@ export function BookingWidget() {
                                 </div>
 
                                 <div className="booking-widget__field">
-                                    <label className="booking-widget__label">Email</label>
+                                    <label className="booking-widget__label">
+                                        Email <span className="booking-widget__required">*</span>
+                                    </label>
                                     <input
                                         type="email"
                                         name="email"
-                                        className="booking-widget__input"
+                                        className={`booking-widget__input ${formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ? 'border-red-500' : ''}`}
                                         placeholder="pelda@email.com"
                                         value={formData.email}
                                         onChange={handleFormChange}
+                                        required
                                     />
+                                    {formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
+                                        <p className="text-xs text-red-500 mt-1">Kérjük, érvényes email címet adjon meg.</p>
+                                    )}
                                 </div>
 
                                 <div className="booking-widget__field">
-                                    <label className="booking-widget__label">Telefonszám</label>
+                                    <label className="booking-widget__label">
+                                        Telefonszám <span className="booking-widget__required">*</span>
+                                    </label>
                                     <input
                                         type="tel"
                                         name="phone"
@@ -488,6 +707,7 @@ export function BookingWidget() {
                                         placeholder="+36 30 123 4567"
                                         value={formData.phone}
                                         onChange={handleFormChange}
+                                        required
                                     />
                                 </div>
 
@@ -513,8 +733,14 @@ export function BookingWidget() {
                                     </button>
                                     <button
                                         type="submit"
-                                        className="booking-widget__button booking-widget__button--primary"
-                                        disabled={!formData.name || submitting}
+                                        className="booking-widget__button booking-widget__button--cta"
+                                        disabled={
+                                            !formData.name ||
+                                            !formData.email ||
+                                            !formData.phone ||
+                                            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) ||
+                                            submitting
+                                        }
                                     >
                                         {submitting ? (
                                             <>
@@ -522,7 +748,7 @@ export function BookingWidget() {
                                                 Küldés...
                                             </>
                                         ) : (
-                                            'Foglalás'
+                                            'FOGLALÁS'
                                         )}
                                     </button>
                                 </div>
@@ -554,6 +780,20 @@ export function BookingWidget() {
                                         </span>
                                     </div>
                                     <div className="booking-widget__success-row">
+                                        <span className="booking-widget__success-label">Szolgáltatás</span>
+                                        <span className="booking-widget__success-value">
+                                            {bookingResult.service}
+                                        </span>
+                                    </div>
+                                    {bookingResult.serviceDetails && (
+                                        <div className="booking-widget__success-row">
+                                            <span className="booking-widget__success-label">Ár</span>
+                                            <span className="booking-widget__success-value">
+                                                {bookingResult.serviceDetails.price} {bookingResult.serviceDetails.currency}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="booking-widget__success-row">
                                         <span className="booking-widget__success-label">Dátum</span>
                                         <span className="booking-widget__success-value">
                                             {formatDate(bookingResult.date)}
@@ -563,12 +803,6 @@ export function BookingWidget() {
                                         <span className="booking-widget__success-label">Időpont</span>
                                         <span className="booking-widget__success-value">
                                             {bookingResult.time}
-                                        </span>
-                                    </div>
-                                    <div className="booking-widget__success-row">
-                                        <span className="booking-widget__success-label">Szolgáltatás</span>
-                                        <span className="booking-widget__success-value">
-                                            {bookingResult.service}
                                         </span>
                                     </div>
                                 </div>
