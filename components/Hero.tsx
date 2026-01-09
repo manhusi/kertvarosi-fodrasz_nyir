@@ -42,8 +42,8 @@ export const Hero: React.FC = () => {
               <span className="text-barbershop-anthracite/70 text-sm font-medium">5.0</span>
             </div>
 
-            {/* Icon */}
-            <div className="hidden lg:flex w-40 h-40 rounded-2xl items-center justify-center mx-auto lg:mx-0 transition-transform overflow-hidden shadow-2xl shadow-barbershop-anthracite/20">
+            {/* Icon/Logo */}
+            <div className="flex w-32 h-32 lg:w-40 lg:h-40 rounded-2xl items-center justify-center mx-auto lg:mx-0 transition-transform overflow-hidden shadow-2xl shadow-barbershop-anthracite/20 mb-6 lg:mb-0">
               <img
                 src="/images/logo.jpg"
                 alt="Kertvárosi Fodrászat Logo"
