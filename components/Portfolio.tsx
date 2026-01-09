@@ -3,20 +3,23 @@ import { Scissors } from 'lucide-react';
 
 export const Portfolio: React.FC = () => {
     const images = [
+        { src: '/images/portfolio/ref-1.jpg', alt: 'Modern átmenetes vágás' },
+        { src: '/images/portfolio/ref-2.jpg', alt: 'Precíz fade vágás' },
+        { src: '/images/portfolio/ref-3.jpg', alt: 'Klasszikus borbély stílus' },
+        { src: '/images/portfolio/ref-4.jpg', alt: 'Rövid átmenetes frizura' },
         { src: '/images/portfolio/haircut-1.png', alt: 'Professzionális férfi hajvágás' },
         { src: '/images/portfolio/haircut-2.png', alt: 'Modern frizura szakállal' },
-        { src: '/images/portfolio/haircut-3.png', alt: 'Klasszikus borbély stílus' },
     ];
 
     return (
-        <section className="relative py-16 lg:py-24 bg-gradient-to-b from-black to-barbershop-navy overflow-hidden">
+        <section className="relative py-16 lg:py-24 bg-gradient-to-b from-barbershop-charcoal to-barbershop-anthracite overflow-hidden">
             {/* Background */}
-            <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#C41E3A_1px,transparent_1px)] [background-size:30px_30px]"></div>
+            <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#f5f0e6_1px,transparent_1px)] [background-size:30px_30px]"></div>
 
             <div className="container mx-auto px-4 lg:px-8 relative z-10">
                 {/* Section Header */}
                 <div className="text-center mb-12">
-                    <div className="inline-flex items-center gap-2 bg-barbershop-red/10 text-barbershop-red px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-barbershop-red/20">
+                    <div className="inline-flex items-center gap-2 bg-white/10 text-barbershop-beige px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-white/20">
                         <Scissors size={16} />
                         Munkáink
                     </div>
@@ -30,7 +33,7 @@ export const Portfolio: React.FC = () => {
                     {images.map((image, index) => (
                         <div
                             key={index}
-                            className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-white/10 hover:border-barbershop-red/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-barbershop-red/20"
+                            className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-white/10 hover:border-barbershop-beige/40 transition-all duration-300 hover:scale-[1.02] hover:shadow-barbershop-beige/20"
                         >
                             <img
                                 src={image.src}

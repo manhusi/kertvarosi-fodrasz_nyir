@@ -6,7 +6,7 @@ export const Testimonials: React.FC = () => {
   const testimonials = LANDING_DATA.trust_signals;
 
   return (
-    <section className="relative py-16 lg:py-24 bg-gradient-to-b from-black to-barbershop-navy overflow-hidden">
+    <section className="relative py-16 lg:py-24 bg-gradient-to-b from-barbershop-warmBeige to-barbershop-cream overflow-hidden">
       {/* Section Header */}
       <div className="container mx-auto px-4 lg:px-8">
         <div className="text-center mb-12">
@@ -29,7 +29,7 @@ export const Testimonials: React.FC = () => {
             <span className="text-gray-800 font-bold text-lg">5.0</span>
           </div>
 
-          <h2 className="text-3xl md:text-4xl font-bold font-heading text-white">
+          <h2 className="text-3xl md:text-4xl font-bold font-heading text-barbershop-anthracite">
             Vendégeink véleménye
           </h2>
         </div>

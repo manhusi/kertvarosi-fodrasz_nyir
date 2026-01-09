@@ -1,25 +1,37 @@
-/* Booking Widget Styles - Bence Masszázs Dark Theme */
+/* Booking Widget Styles - Kertvárosi Fodrászat Anthracite & Beige Theme */
 
 .booking-widget {
-  --bw-primary: #d4af37;
-  --bw-primary-hover: #c59d65;
-  --bw-primary-light: rgba(212, 175, 55, 0.15);
-  --bw-success: #34A853;
-  --bw-success-light: rgba(52, 168, 83, 0.15);
-  --bw-error: #FF3B30;
-  --bw-error-light: rgba(255, 59, 48, 0.15);
-  --bw-bg-dark: #0a0a0a;
-  --bw-bg-card: #111111;
-  --bw-bg-hover: #1a1a1a;
-  --bw-border: rgba(212, 175, 55, 0.2);
-  --bw-border-light: rgba(255, 255, 255, 0.1);
-  --bw-text: #ffffff;
-  --bw-text-muted: #9ca3af;
-  --bw-text-dim: #6b7280;
-  --bw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --bw-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --bw-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-  --bw-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  /* Anthracite (dark charcoal/gray) as primary accent */
+  --bw-primary: #4a4a4a;
+  --bw-primary-hover: #5a5a5a;
+  --bw-primary-light: rgba(74, 74, 74, 0.12);
+  
+  /* Status colors */
+  --bw-success: #4a7c59;
+  --bw-success-light: rgba(74, 124, 89, 0.15);
+  --bw-error: #c44536;
+  --bw-error-light: rgba(196, 69, 54, 0.12);
+  
+  /* Beige/Cream backgrounds (matching shop walls) */
+  --bw-bg-dark: #d4c4a8;
+  --bw-bg-card: #f5f0e6;
+  --bw-bg-hover: #ebe4d6;
+  
+  /* Borders */
+  --bw-border: rgba(74, 74, 74, 0.25);
+  --bw-border-light: rgba(74, 74, 74, 0.12);
+  
+  /* Text colors - dark for readability on light background */
+  --bw-text: #2d2d2d;
+  --bw-text-muted: #5a5a5a;
+  --bw-text-dim: #7a7a7a;
+  
+  /* Shadows - softer for light theme */
+  --bw-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --bw-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --bw-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.08);
+  --bw-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+  
   --bw-radius-sm: 8px;
   --bw-radius: 12px;
   --bw-radius-lg: 16px;
@@ -49,7 +61,7 @@
 .booking-widget__header {
   padding: 24px 24px 20px;
   border-bottom: 1px solid var(--bw-border);
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, transparent 100%);
+  background: linear-gradient(135deg, rgba(74, 74, 74, 0.08) 0%, transparent 100%);
 }
 
 .booking-widget__title {
@@ -89,7 +101,7 @@
   background: var(--bw-primary);
   width: 24px;
   border-radius: 4px;
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 12px rgba(74, 74, 74, 0.25);
 }
 
 .booking-widget__step-dot--completed {
@@ -198,9 +210,9 @@
 /* Kiválasztott nap */
 .booking-widget__day--selected {
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
+  color: #ffffff;
   border: 2px solid var(--bw-primary);
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 16px rgba(74, 74, 74, 0.3);
 }
 
 .booking-widget__day--selected.booking-widget__day--today {
@@ -309,8 +321,8 @@
 .booking-widget__slot--selected {
   border-color: var(--bw-primary);
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(74, 74, 74, 0.25);
 }
 
 .booking-widget__slot--selected:hover {
@@ -383,13 +395,13 @@
 
 .booking-widget__button--primary {
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
+  color: #ffffff;
 }
 
 .booking-widget__button--primary:hover:not(:disabled) {
   background: var(--bw-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 4px 16px rgba(74, 74, 74, 0.3);
 }
 
 .booking-widget__button--primary:active:not(:disabled) {
@@ -409,18 +421,18 @@
 
 .booking-widget__button--cta {
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
+  color: #ffffff;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+  box-shadow: 0 4px 15px rgba(74, 74, 74, 0.35);
 }
 
 .booking-widget__button--cta:hover:not(:disabled) {
-  background: #f0c350;
-  /* Lighter gold for hover */
+  background: #5a5a5a;
+  /* Lighter anthracite for hover */
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+  box-shadow: 0 6px 20px rgba(74, 74, 74, 0.4);
 }
 
 .booking-widget__button--cta:disabled {
@@ -700,13 +712,13 @@
 .booking-widget__pill--selected {
   border-color: var(--bw-primary);
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.4);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(74, 74, 74, 0.3);
 }
 
 .booking-widget__pill--selected:hover {
   background: var(--bw-primary-hover);
-  color: var(--bw-bg-dark);
+  color: #ffffff;
   transform: translateY(-2px);
 }
 
@@ -750,11 +762,11 @@
 }
 
 .booking-widget__service-card--selected .booking-widget__service-name {
-  color: var(--bw-bg-dark);
+  color: #ffffff;
 }
 
 .booking-widget__service-card--selected svg {
-  color: var(--bw-bg-dark);
+  color: #ffffff;
 }
 
 .booking-widget__service-name {
@@ -828,8 +840,8 @@
 .booking-widget__slot--selected {
   border-color: var(--bw-primary);
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(74, 74, 74, 0.25);
 }
 
 .booking-widget__slot--selected:hover {
@@ -905,12 +917,12 @@
 .booking-widget__time-btn--selected {
   border-color: var(--bw-primary);
   background: var(--bw-primary);
-  color: var(--bw-bg-dark);
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.4);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(74, 74, 74, 0.3);
 }
 
 .booking-widget__time-btn--selected:hover {
   background: var(--bw-primary-hover);
-  color: var(--bw-bg-dark);
+  color: #ffffff;
   transform: translateY(-2px);
 }
