@@ -7,8 +7,8 @@ import {
 
 // Bence Masszázs API configuration
 const BASE_URL = 'https://jdwhmvruzbvkzgfdousz.supabase.co/functions/v1';
-const PUBLIC_API_KEY = '78EIFxt4yHhvFoqiygMBHGKWTR8FzNiOwCvGnimsJInHcuo3';
-const BOOKING_API_KEY = 'aDLEj5fxvN6b5IItp0GDcYIbkLgyVK4aLmSdtYQBP6EUfw8U';
+const PUBLIC_API_KEY = 'X4hzn2nsAaxfJDNIfJfUsieoZq0jGTISIybxvwp2ABI9iDBi';
+const BOOKING_API_KEY = 'UCaGlu9lhQuEqSWR6wPn3caImYCbLOvgyHS056UdC5RdBOLO';
 
 export class BookingApiError extends Error {
     constructor(
