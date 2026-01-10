@@ -47,7 +47,7 @@ export const PrivacyPolicy: React.FC = () => {
                             <div className="pl-8 space-y-2">
                                 <p><strong className="text-white">Név:</strong> Kertvárosi Fodrászat</p>
                                 <p><strong className="text-white">Cím:</strong> 4400 Nyíregyháza, Újház sor 15.</p>
-                                <p><strong className="text-white">E-mail:</strong> info@kertvarosifodraszat.hu</p>
+                                <p><strong className="text-white">E-mail:</strong> kertvarosi.fodraszat.borbely@gmail.com</p>
                             </div>
                         </section>
 
@@ -206,8 +206,7 @@ export const PrivacyPolicy: React.FC = () => {
                                     Adatkezeléssel kapcsolatos kérdéseivel, kéréseivel forduljon hozzánk bizalommal:
                                 </p>
                                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-                                    <p><strong className="text-white">E-mail:</strong> info@kertvarosifodraszat.hu</p>
-                                    <p><strong className="text-white">Telefon:</strong> +36 30 123 4567</p>
+                                    <p><strong className="text-white">E-mail:</strong> kertvarosi.fodraszat.borbely@gmail.com</p>
                                 </div>
                                 <p className="text-sm text-white/60">
                                     Amennyiben úgy érzi, hogy megsértettük az adatvédelmi jogait, panaszt tehet a

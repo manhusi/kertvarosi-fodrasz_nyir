@@ -21,6 +21,10 @@ export const Footer: React.FC = () => {
           <p className="text-barbershop-anthracite/50 text-sm">
             &copy; {new Date().getFullYear()} Kertvárosi Fodrászat - Borbély Üzlet
           </p>
+
+          <a href="/adatkezeles" className="text-barbershop-anthracite/40 hover:text-barbershop-anthracite/70 text-xs transition-colors underline decoration-barbershop-anthracite/20">
+            Adatkezelési Tájékoztató
+          </a>
         </div>
       </div>
     </footer>
