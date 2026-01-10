@@ -1,5 +1,8 @@
 import { LandingData } from './types';
 
+// Multi-tenant configuration - identifies this website
+export const TENANT_SLUG = 'kertvarosi-fodrasz';
+
 export const FULL_SERVICES_DATA = {
   "kertvarosifodraszat_barbershop_services": [
     {

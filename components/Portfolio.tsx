@@ -1,20 +1,75 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Scissors, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Scissors, ChevronLeft, ChevronRight, Loader2, ImageOff } from 'lucide-react';
+import { supabase, getPublicImageUrl } from '../lib/supabaseClient';
+import { TENANT_SLUG } from '../constants';
+import type { PortfolioImage } from '../lib/database.types';
+
+interface DisplayImage {
+    src: string;
+    alt: string;
+}
 
 export const Portfolio: React.FC = () => {
-    const images = [
-        { src: '/images/portfolio/ref-1.jpg', alt: 'Modern átmenetes vágás' },
-        { src: '/images/portfolio/ref-2.jpg', alt: 'Precíz fade vágás' },
-        { src: '/images/portfolio/ref-3.jpg', alt: 'Klasszikus borbély stílus' },
-        { src: '/images/portfolio/ref-4.jpg', alt: 'Rövid átmenetes frizura' },
-        { src: '/images/portfolio/haircut-1.png', alt: 'Professzionális férfi hajvágás' },
-        { src: '/images/portfolio/haircut-2.png', alt: 'Modern frizura szakállal' },
-    ];
-
+    const [images, setImages] = useState<DisplayImage[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
     const [isPaused, setIsPaused] = useState(false);
+
+    // Load images from Supabase
+    useEffect(() => {
+        loadImagesFromSupabase();
+    }, []);
+
+    const loadImagesFromSupabase = async () => {
+        try {
+            // First get the tenant ID from slug
+            const { data: tenant, error: tenantError } = await supabase
+                .from('tenants')
+                .select('id')
+                .eq('slug', TENANT_SLUG)
+                .single();
+
+            if (tenantError || !tenant) {
+                // Tenant not found, no images to show
+                console.log('Tenant not found');
+                setImages([]);
+                setIsLoading(false);
+                return;
+            }
+
+            // Get portfolio images for this tenant
+            const { data: portfolioImages, error: imagesError } = await supabase
+                .from('portfolio_images')
+                .select('*')
+                .eq('tenant_id', tenant.id)
+                .order('order', { ascending: true });
+
+            if (imagesError) {
+                console.error('Error loading images:', imagesError);
+                setImages([]);
+                setIsLoading(false);
+                return;
+            }
+
+            if (portfolioImages && portfolioImages.length > 0) {
+                const mappedImages: DisplayImage[] = portfolioImages.map((img: PortfolioImage) => ({
+                    src: getPublicImageUrl(img.storage_path),
+                    alt: img.alt_text || 'Portfólió kép'
+                }));
+                setImages(mappedImages);
+            } else {
+                // No images in database
+                setImages([]);
+            }
+        } catch (err) {
+            console.error('Failed to load portfolio images:', err);
+            setImages([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Responsive items per view
     const getItemsPerView = () => {
@@ -41,14 +96,14 @@ export const Portfolio: React.FC = () => {
 
     // Auto-play
     useEffect(() => {
-        if (isPaused) return;
+        if (isPaused || isLoading) return;
 
         const interval = setInterval(() => {
             setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
         }, 4000);
 
         return () => clearInterval(interval);
-    }, [isPaused, maxIndex]);
+    }, [isPaused, maxIndex, isLoading]);
 
     const nextSlide = () => {
         setCurrentIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
@@ -103,74 +158,87 @@ export const Portfolio: React.FC = () => {
                     </h2>
                 </div>
 
-                {/* Carousel Container */}
-                <div
-                    className="relative max-w-6xl mx-auto"
-                    onMouseEnter={() => setIsPaused(true)}
-                    onMouseLeave={() => setIsPaused(false)}
-                    onTouchStart={onTouchStart}
-                    onTouchMove={onTouchMove}
-                    onTouchEnd={onTouchEnd}
-                >
-                    {/* Items Wrapper */}
-                    <div className="overflow-hidden">
-                        <div
-                            className="flex transition-transform duration-500 ease-in-out"
-                            style={{ transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)` }}
-                        >
-                            {images.map((image, index) => (
-                                <div
-                                    key={index}
-                                    style={{ width: `${100 / itemsPerView}%` }}
-                                    className="flex-shrink-0 px-3"
-                                >
-                                    <div className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-white/10 hover:border-barbershop-beige/40 transition-all duration-300">
-                                        <img
-                                            src={image.src}
-                                            alt={image.alt}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                            draggable={false}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                                            <p className="text-white font-semibold text-lg">{image.alt}</p>
+                {/* Loading State */}
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <Loader2 className="w-8 h-8 text-barbershop-beige animate-spin" />
+                    </div>
+                ) : images.length === 0 ? (
+                    /* Empty State - No images in Supabase */
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <ImageOff className="w-16 h-16 text-white/20 mb-4" />
+                        <p className="text-white/40 text-lg">Hamarosan feltöltjük a munkáinkat!</p>
+                    </div>
+                ) : (
+                    /* Carousel Container */
+                    <div
+                        className="relative max-w-6xl mx-auto"
+                        onMouseEnter={() => setIsPaused(true)}
+                        onMouseLeave={() => setIsPaused(false)}
+                        onTouchStart={onTouchStart}
+                        onTouchMove={onTouchMove}
+                        onTouchEnd={onTouchEnd}
+                    >
+                        {/* Items Wrapper */}
+                        <div className="overflow-hidden">
+                            <div
+                                className="flex transition-transform duration-500 ease-in-out"
+                                style={{ transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)` }}
+                            >
+                                {images.map((image, index) => (
+                                    <div
+                                        key={index}
+                                        style={{ width: `${100 / itemsPerView}%` }}
+                                        className="flex-shrink-0 px-3"
+                                    >
+                                        <div className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-white/10 hover:border-barbershop-beige/40 transition-all duration-300">
+                                            <img
+                                                src={image.src}
+                                                alt={image.alt}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                draggable={false}
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
+                                                <p className="text-white font-semibold text-lg">{image.alt}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Navigation Buttons (Desktop) */}
+                        <button
+                            onClick={prevSlide}
+                            className="hidden lg:flex absolute top-1/2 -left-12 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full items-center justify-center text-white transition-colors border border-white/10"
+                            aria-label="Előző kép"
+                        >
+                            <ChevronLeft size={24} />
+                        </button>
+                        <button
+                            onClick={nextSlide}
+                            className="hidden lg:flex absolute top-1/2 -right-12 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full items-center justify-center text-white transition-colors border border-white/10"
+                            aria-label="Következő kép"
+                        >
+                            <ChevronRight size={24} />
+                        </button>
+
+                        {/* Indicators */}
+                        <div className="flex justify-center gap-2 mt-8">
+                            {Array.from({ length: maxIndex + 1 }).map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => setCurrentIndex(i)}
+                                    className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex
+                                        ? 'w-8 bg-barbershop-beige'
+                                        : 'w-2 bg-white/20 hover:bg-white/40'
+                                        }`}
+                                    aria-label={`${i + 1}. oldal`}
+                                />
                             ))}
                         </div>
                     </div>
-
-                    {/* Navigation Buttons (Desktop) */}
-                    <button
-                        onClick={prevSlide}
-                        className="hidden lg:flex absolute top-1/2 -left-12 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full items-center justify-center text-white transition-colors border border-white/10"
-                        aria-label="Előző kép"
-                    >
-                        <ChevronLeft size={24} />
-                    </button>
-                    <button
-                        onClick={nextSlide}
-                        className="hidden lg:flex absolute top-1/2 -right-12 -translate-y-1/2 w-10 h-10 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full items-center justify-center text-white transition-colors border border-white/10"
-                        aria-label="Következő kép"
-                    >
-                        <ChevronRight size={24} />
-                    </button>
-
-                    {/* Indicators */}
-                    <div className="flex justify-center gap-2 mt-8">
-                        {Array.from({ length: maxIndex + 1 }).map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentIndex(i)}
-                                className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex
-                                        ? 'w-8 bg-barbershop-beige'
-                                        : 'w-2 bg-white/20 hover:bg-white/40'
-                                    }`}
-                                aria-label={`${i + 1}. oldal`}
-                            />
-                        ))}
-                    </div>
-                </div>
+                )}
             </div>
         </section>
     );
