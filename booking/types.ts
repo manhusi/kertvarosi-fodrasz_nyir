@@ -30,6 +30,8 @@ export interface BookingRequest {
   name: string;
   datetime: string;  // ISO datetime
   service: string;
+  intent_token: string;        // KÖTELEZŐ - Intent token a create-booking-intent-ből
+  recaptcha_token?: string;    // Kötelező ha require_captcha = true
   is_returning?: boolean;
   service_id?: string; // New field for backend, optional for returning users
   include_price?: boolean; // Request price in response

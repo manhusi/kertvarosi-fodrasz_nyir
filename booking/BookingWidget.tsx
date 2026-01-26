@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchAvailability, createBooking, identifyReturningCustomer, BookingApiError } from './api';
+import { fetchAvailability, createBooking, createBookingIntent, getRecaptchaToken, identifyReturningCustomer, BookingApiError } from './api';
 import {
     Slot,
     AvailabilityResponse,
@@ -344,11 +344,25 @@ export function BookingWidget({ initialService }: BookingWidgetProps) {
             setSubmitting(true);
             setError(null);
 
+            // 1. Get intent token
+            const intentResponse = await createBookingIntent();
+            const { intent_token, require_captcha } = intentResponse;
+
+            // 2. Get reCAPTCHA token if required
+            let recaptcha_token: string | undefined = undefined;
+            if (require_captcha) {
+                const captchaResult = await getRecaptchaToken();
+                recaptcha_token = captchaResult || undefined;
+            }
+
+            // 3. Create booking with tokens
             const response = await createBooking({
                 name: formData.name,
-                datetime: selectedSlot!.datetime, // We know selectedSlot is set here
+                datetime: selectedSlot!.datetime,
                 service: serviceName,
                 service_id: serviceId,
+                intent_token: intent_token,
+                recaptcha_token: recaptcha_token,
                 is_returning: customerType === 'returning',
                 email: formData.email || undefined,
                 phone: formData.phone || undefined,

@@ -21,6 +21,69 @@ export class BookingApiError extends Error {
     }
 }
 
+// reCAPTCHA site key
+const RECAPTCHA_SITE_KEY = '6LciqFYsAAAAADFbX1Gcv_mahZj6JkhUIJ0-YM9L';
+
+// Intent token response interface
+export interface IntentResponse {
+    intent_token: string;
+    require_captcha: boolean;
+}
+
+// Declare grecaptcha for TypeScript
+declare global {
+    interface Window {
+        grecaptcha?: {
+            ready: (callback: () => void) => void;
+            execute: (siteKey: string, options: { action: string }) => Promise<string>;
+        };
+    }
+}
+
+/**
+ * Get an intent token before creating a booking.
+ * This is required for external widget bookings.
+ */
+export async function createBookingIntent(): Promise<IntentResponse> {
+    const response = await fetch(`${BASE_URL}/create-booking-intent`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${BOOKING_API_KEY}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        throw new BookingApiError(
+            'Nem sikerült foglalási tokent kérni',
+            response.status
+        );
+    }
+
+    return response.json();
+}
+
+/**
+ * Get a reCAPTCHA token for bot protection.
+ * Returns null if reCAPTCHA is not loaded.
+ */
+export async function getRecaptchaToken(): Promise<string | null> {
+    return new Promise((resolve) => {
+        if (!window.grecaptcha) {
+            console.warn('reCAPTCHA not loaded');
+            resolve(null);
+            return;
+        }
+
+        window.grecaptcha.ready(() => {
+            window.grecaptcha!
+                .execute(RECAPTCHA_SITE_KEY, { action: 'booking' })
+                .then(resolve)
+                .catch(() => resolve(null));
+        });
+    });
+}
+
 export async function identifyReturningCustomer(
     data: IdentifyCustomerRequest
 ): Promise<IdentifyCustomerResponse> {
